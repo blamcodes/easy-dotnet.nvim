@@ -113,7 +113,7 @@ local function run_csproject(win, node)
 
   win.refreshTree()
   vim.fn.jobstart(
-    string.format('dotnet test --nologo %s %s --logger="trx;logFileName=%s"', get_dotnet_args(win.options),
+    string.format('dotnet test --nologo %s --logger="trx;logFileName=%s"',
       node.cs_project_path,
       log_file_name), {
       on_exit = function(_, code)
@@ -143,8 +143,8 @@ local function run_test_group(line, win)
   local on_job_finished = win.appendJob(line.name, "Run", testcount)
   win.refreshTree()
   vim.fn.jobstart(
-    string.format('dotnet test --filter=%s --nologo %s %s --logger="trx;logFileName=%s"',
-      suite_name, get_dotnet_args(win.options), line.cs_project_path, log_file_name),
+    string.format('dotnet test --filter=%s --nologo %s --logger="trx;logFileName=%s"',
+      suite_name, line.cs_project_path, log_file_name),
     {
       on_exit = function()
         parse_log_file(relative_log_file_path, win, line, on_job_finished)
@@ -173,8 +173,8 @@ local function run_test_suite(line, win)
 
   local on_job_finished = win.appendJob(line.namespace, "Run", testcount)
   vim.fn.jobstart(
-    string.format('dotnet test --filter=%s --nologo %s %s --logger="trx;logFileName=%s"',
-      suite_name, get_dotnet_args(win.options), line.cs_project_path, log_file_name),
+    string.format('dotnet test --filter=%s --nologo %s --logger="trx;logFileName=%s"',
+      suite_name,  line.cs_project_path, log_file_name),
     {
       on_exit = function()
         parse_log_file(relative_log_file_path, win, line, on_job_finished)
@@ -221,27 +221,39 @@ end
 
 ---@param node TestNode
 local function run_test(node, win)
-  local log_file_name = string.format("%s.xml", node.name)
+  local test = node.namespace:gsub("%b()", "")
+  local log_file_name = string.format("%s.xml", test)
+  -- print(log_file_name)
   local normalized_path = node.cs_project_path:gsub('\\', '/')
+
+  -- print(normalized_path)
   local directory_path = normalized_path:match('^(.*)/[^/]*$')
+
+  -- print(directory_path)
   local relative_log_file_path = vim.fs.joinpath(directory_path, "TestResults", log_file_name)
 
-  local command = string.format(
-    'dotnet test --filter=%s --nologo %s %s --logger="trx;logFileName=%s"',
-    node.namespace:gsub("%b()", ""), get_dotnet_args(win.options), node.cs_project_path, log_file_name)
+  -- print(node.namespace:gsub("%b()", ""))
+  -- print(node.cs_project_path);
 
-  local on_job_finished = win.appendJob(node.name, "Run")
+  local command = string.format(
+    'dotnet test --filter=%s --nologo %s --logger="trx;logFileName=%s"',
+    node.namespace:gsub("%b()", ""), node.cs_project_path, log_file_name)
+  print(command)
+
+  local on_job_finished = win.appendJob(test, "Run")
 
   node.icon = "<Running>"
   vim.fn.jobstart(
     command, {
       on_exit = function()
+        -- print(relative_log_file_path)
         require("easy-dotnet.test-runner.test-parser").xml_to_json(relative_log_file_path,
           ---@param unit_test_results TestCase
           function(unit_test_results)
+            -- print(vim.inspect(unit_test_results))
             local result = unit_test_results[1]
             if result == nil then
-              error(string.format("Status of %s was not present in xml file", node.name))
+              error(string.format("Status of %s was not present in xml file", test))
             end
             parse_status(result, node, win.options)
             on_job_finished()
