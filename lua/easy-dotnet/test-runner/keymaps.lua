@@ -55,8 +55,8 @@ local function parse_log_file(relative_log_file_path, win, node, on_completed)
     function(unit_test_results)
       if #unit_test_results == 0 then
         win.traverse(node, function(child)
-          if child.icon == "<Running>" then
-            child.icon = "<No status reported>"
+          if child.icon == "⏳"then
+            child.icon = "❓"
           end
         end)
         on_completed()
@@ -102,7 +102,7 @@ local function run_csproject(win, node)
   local testcount = 0
   ---@param child TestNode
   win.traverse(node, function(child)
-    child.icon = "<Running>"
+    child.icon = "⏳"
     table.insert(matches, { ref = child, line = child.namespace, id = child.id })
     if child.type == "test" or child.type == "subcase" then
       testcount = testcount + 1
@@ -134,7 +134,7 @@ local function run_test_group(line, win)
   local testcount = 0
   ---@param child TestNode
   win.traverse(line, function(child)
-    child.icon = "<Running>"
+    child.icon = "⏳"
     if child.type == "test" or child.type == "subcase" then
       testcount = testcount + 1
     end
@@ -164,7 +164,7 @@ local function run_test_suite(line, win)
   local testcount = 0
   local suite_name = line.namespace
   win.traverse(line, function(child)
-    child.icon = "<Running>"
+    child.icon = "⏳"
     if child.type == "test" or child.type == "subcase" then
       testcount = testcount + 1
     end
@@ -242,7 +242,7 @@ local function run_test(node, win)
 
   local on_job_finished = win.appendJob(test, "Run")
 
-  node.icon = "<Running>"
+  node.icon = "⏳"
   vim.fn.jobstart(
     command, {
       on_exit = function()

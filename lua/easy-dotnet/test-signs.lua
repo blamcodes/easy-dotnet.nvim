@@ -80,6 +80,8 @@ local function run_test_from_buffer()
     if (node.type == "test" or node.type == "test_group") and compare_paths(node.file_path, curr_file) and node.line_number - 1 == current_line then
       local spinner = require("easy-dotnet.ui-modules.spinner").new()
       spinner:start_spinner("Running test")
+      local start_time = os.time()
+
 
       run_test(node.name, node.namespace, node.cs_project_path, function(results)
         ---@type TestResult
@@ -100,7 +102,8 @@ local function run_test_from_buffer()
           node.icon = options.icons.passed
           vim.fn.sign_place(0, sign_ns, signs.EasyDotnetTestPassed, bufnr,
             { lnum = current_line, priority = 20 })
-          spinner:stop_spinner("Passed")
+          local end_time = os.time()
+          spinner:stop_spinner("Passed (" .. os.difftime(end_time,start_time) .. ")")
         elseif worst_outcome == "Failed" then
           node.icon = options.icons.failed
           vim.fn.sign_place(0, sign_ns, signs.EasyDotnetTestFailed, bufnr,
